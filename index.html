@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class 8 Confessions</title>
+    <style>
+        /* --- FACEBOOK VIBE CSS --- */
+        body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding-bottom: 50px; }
+        
+        /* Navbar */
+        .navbar { background: white; padding: 12px 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 999; }
+        .brand { color: #1877f2; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+        .write-btn { background: #e7f3ff; color: #1877f2; text-decoration: none; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; }
+        .logout-btn { background: #eee; border:none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; margin-left: 10px; display: none; }
+
+        /* Container */
+        .feed { max-width: 600px; margin: 20px auto; padding: 0 10px; }
+
+        /* Card Style */
+        .card { background: white; border-radius: 8px; padding: 15px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: opacity 0.3s; }
+        .card-header { display: flex; margin-bottom: 10px; align-items: center; }
+        .avatar { width: 40px; height: 40px; background: #ddd; border-radius: 50%; margin-right: 10px; background-image: url('https://ui-avatars.com/api/?name=User&background=random'); background-size: cover; }
+        .meta h4 { margin: 0; font-size: 15px; color: #050505; }
+        .meta span { font-size: 12px; color: #65676b; }
+        
+        .content { font-size: 15px; line-height: 1.5; color: #050505; white-space: pre-wrap; word-wrap: break-word; }
+
+        /* --- ADMIN PANEL STYLES --- */
+        #admin-panel { display: none; border: 2px dashed #1877f2; background: #f0f7ff; margin-bottom: 30px; }
+        .admin-tag { background: #1877f2; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+        
+        /* Blur Effect for Admins */
+        .blurred { filter: blur(6px); cursor: pointer; user-select: none; transition: 0.3s; }
+        .blurred:hover, .revealed { filter: blur(0) !important; }
+        
+        .actions { display: flex; gap: 10px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; }
+        .btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-yes { background: #e7f3ff; color: #1877f2; }
+        .btn-yes:hover { background: #dbebff; }
+        .btn-no { background: #ffebeb; color: #d32f2f; }
+        
+        .loading { text-align: center; color: #65676b; padding: 20px; }
+    </style>
+</head>
+<body>
+
+    <!-- NAV -->
+    <div class="navbar">
+        <div class="brand">Confessions 8A</div>
+        <div>
+            <!-- LINK TO YOUR GOOGLE FORM BELOW -->
+            <a href="https://forms.google.com/..." target="_blank" class="write-btn">+ Viết</a>
+            <button onclick="logout()" id="logout" class="logout-btn">Log out</button>
+        </div>
+    </div>
+
+    <div class="feed">
+        
+        <!-- ADMIN AREA (Hidden by default) -->
+        <div id="admin-panel" class="feed">
+            <h3 style="color:#1877f2; margin: 10px 0;">🛡️ Admin Queue</h3>
+            <p style="font-size:12px; color:#65676b; margin-bottom: 15px;">
+                Only posts with "Có muốn public" are shown here. <br>Hover/Click text to reveal.
+            </p>
+            <div id="pending-list"></div>
+        </div>
+
+        <!-- PUBLIC FEED -->
+        <div id="public-list">
+            <div class="loading">Đang tải confession...</div>
+        </div>
+
+    </div>
+
+    <script>
+        // ⚠️ PASTE YOUR DEPLOYED WEB APP URL HERE (SAME AS ADMIN.HTML)
+        const API_URL = "https://script.google.com/macros/s/AKfycbwaPERxZDMhQE9kphbu7B94gUjSlj5t8J9psgisKlhJB9PIGzJ9_6MR0irUJby1uCiq/exec";
+
+        // 1. CHECK LOGIN STATUS
+        const isAdmin = localStorage.getItem('admin_token') === 'logged_in';
+        
+        if (isAdmin) {
+            document.getElementById('admin-panel').style.display = 'block';
+            document.getElementById('logout').style.display = 'inline-block';
+        }
+
+        // 2. FETCH DATA
+        async function init() {
+            try {
+                const res = await fetch(`${API_URL}?type=getData`);
+                const data = await res.json();
+                
+                renderPublic(data.public);
+                if (isAdmin) renderPending(data.pending);
+            } catch (e) {
+                document.querySelector('.loading').innerText = "Lỗi kết nối server!";
+            }
+        }
+
+        // 3. RENDER PUBLIC POSTS
+        function renderPublic(posts) {
+            const list = document.getElementById('public-list');
+            list.innerHTML = '';
+            
+            posts.forEach(p => {
+                // p[0] is Timestamp, p[1] is Content
+                const date = new Date(p[0]).toLocaleDateString('vi-VN');
+                const html = `
+                <div class="card">
+                    <div class="card-header">
+                        <div class="avatar"></div>
+                        <div class="meta">
+                            <h4>Người ẩn danh</h4>
+                            <span>${date}</span>
+                        </div>
+                    </div>
+                    <div class="content">${p[1]}</div>
+                </div>`;
+                list.innerHTML += html;
+            });
+        }
+
+        // 4. RENDER PENDING (ADMIN ONLY)
+        function renderPending(posts) {
+            const list = document.getElementById('pending-list');
+            list.innerHTML = '';
+
+            if (posts.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:#888">Sạch bách! Không có bài chờ.</p>';
+                return;
+            }
+
+            posts.forEach(p => {
+                // p.rowId is the index we use to delete/move
+                const html = `
+                <div class="card" id="row-${p.rowId}">
+                    <div class="card-header">
+                        <div class="meta">
+                            <h4 style="color:#d32f2f">Chờ duyệt <span class="admin-tag">Riêng tư</span></h4>
+                            <span>${new Date(p.ts).toLocaleString()}</span>
+                        </div>
+                    </div>
+                    <!-- BLURRED CONTENT -->
+                    <div class="content blurred" onclick="this.classList.add('revealed')">
+                        ${p.content}
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-yes" onclick="process('${p.rowId}', 'public')">Đăng</button>
+                        <button class="btn btn-no" onclick="process('${p.rowId}', 'archive')">Hủy</button>
+                    </div>
+                </div>`;
+                list.innerHTML += html;
+            });
+        }
+
+        // 5. ADMIN ACTIONS
+        async function process(rowId, action) {
+            const card = document.getElementById(`row-${rowId}`);
+            // Visual feedback
+            card.style.opacity = '0.5';
+            card.style.pointerEvents = 'none';
+
+            await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'move', rowId: rowId, to: action })
+            });
+
+            // Remove from UI
+            card.remove();
+        }
+
+        function logout() {
+            localStorage.removeItem('admin_token');
+            location.reload();
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

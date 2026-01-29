@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <style>
+        body { background: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .login-box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 300px; text-align: center; }
+        h2 { color: #1877f2; margin-bottom: 20px; }
+        input { width: 90%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #1877f2; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #166fe5; }
+        #error { color: red; font-size: 13px; margin-top: 10px; min-height: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="login-box">
+    <h2>Admin Access</h2>
+    <input type="text" id="user" placeholder="Username">
+    <input type="password" id="pass" placeholder="Password">
+    <button onclick="handleLogin()" id="btn">Log In</button>
+    <div id="error"></div>
+</div>
+
+<script>
+    // ⚠️ PASTE YOUR DEPLOYED WEB APP URL HERE
+    const API_URL = "https://script.google.com/macros/s/AKfycbwaPERxZDMhQE9kphbu7B94gUjSlj5t8J9psgisKlhJB9PIGzJ9_6MR0irUJby1uCiq/exec";
+
+    async function handleLogin() {
+        const user = document.getElementById('user').value;
+        const pass = document.getElementById('pass').value;
+        const btn = document.getElementById('btn');
+        const err = document.getElementById('error');
+
+        btn.innerText = "Checking...";
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'login', user: user, pass: pass })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                // Save login forever
+                localStorage.setItem('admin_token', 'logged_in');
+                window.location.href = "index.html"; 
+            } else {
+                err.innerText = "Wrong username or password";
+                btn.innerText = "Log In";
+                btn.disabled = false;
+            }
+        } catch (e) {
+            err.innerText = "Connection Error";
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>
